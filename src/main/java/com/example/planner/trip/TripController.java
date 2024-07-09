@@ -3,6 +3,7 @@ package com.example.planner.trip;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.planner.participant.ParticipantCreateResponse;
+import com.example.planner.participant.ParticipantData;
+import com.example.planner.participant.ParticipantRequestPayload;
 import com.example.planner.participant.ParticipantService;
 
 
@@ -76,4 +80,32 @@ public class TripController {
         }
         return ResponseEntity.notFound().build();     
     }
+
+    //Participant
+    
+    @PostMapping("/{id}/invite")
+    public ResponseEntity<ParticipantCreateResponse> inviteParticipant(@PathVariable UUID id, @RequestBody ParticipantRequestPayload payload) {
+
+        Optional<Trip> trip = this.repository.findById(id);
+
+        if(trip.isPresent()){
+            Trip rawTrip = trip.get();
+            
+
+            ParticipantCreateResponse participantResponse  = this.participantService.registerParticipantToEvent(payload.email(), rawTrip);
+
+            if(rawTrip.getIsConfirmed()) this.participantService.triggerConfirmationEmailToParticipant(payload.email());
+            
+            return ResponseEntity.ok(participantResponse);
+        }
+        return ResponseEntity.notFound().build();    
+    }
+    
+    @GetMapping("/{id}/participants")
+    public ResponseEntity<List<ParticipantData>> getAllParticipants(@PathVariable UUID id){
+        List<ParticipantData> participantList = this.participantService.getAllParticipantsFromEvent(id);
+
+        return ResponseEntity.ok(participantList);
+    }
+
 }  
